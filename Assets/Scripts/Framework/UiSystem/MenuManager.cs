@@ -8,19 +8,19 @@ using Object = UnityEngine.Object;
 /// 閉じたメニューは非表示で残し、次に開くときに使い回す。
 /// メニューは今のシーンに作られるので、シーン切り替えで一緒に消える（次に開くときに作り直す）。
 /// </summary>
-public static class UIManager
+public static class MenuManager
 {
     // アドレスは「UI/クラス名」
     private const string _ADDRESS_PREFIX = "UI/";
 
     // 作成済みのメニュー。型ごとに 1 つだけ。
-    private static readonly Dictionary<Type, Menu> _menu_dict = new();
+    private static readonly Dictionary<Type, MenuBase> _menu_dict = new();
 
     /// <summary>
     /// メニューを開いて返す。無ければ作る。すでに開いていればそのまま返す。
     /// 失敗時は null。
     /// </summary>
-    public static T Open<T>() where T : Menu
+    public static T Open<T>() where T : MenuBase
     {
         var menu = Get<T>();
         if (menu == null)
@@ -41,7 +41,7 @@ public static class UIManager
     }
 
     /// <summary>メニューを閉じる。開いていなければ何もしない。</summary>
-    public static void Close<T>() where T : Menu
+    public static void Close<T>() where T : MenuBase
     {
         var menu = Get<T>();
         if (menu != null)
@@ -51,7 +51,7 @@ public static class UIManager
     }
 
     /// <summary>作成済みのメニューを返す（開きはしない）。無ければ null。</summary>
-    public static T Get<T>() where T : Menu
+    public static T Get<T>() where T : MenuBase
     {
         if (!_menu_dict.TryGetValue(typeof(T), out var menu))
         {
@@ -69,14 +69,14 @@ public static class UIManager
     }
 
     /// <summary>メニューが表示中なら true。</summary>
-    public static bool IsOpen<T>() where T : Menu
+    public static bool IsOpen<T>() where T : MenuBase
     {
         var menu = Get<T>();
         return menu != null && menu.isOpen;
     }
 
     // Prefab から生成し、初期化して閉じた状態で登録する。
-    private static T _Create<T>() where T : Menu
+    private static T _Create<T>() where T : MenuBase
     {
         var address = _ADDRESS_PREFIX + typeof(T).Name;
         var go = AssetManager.Instantiate(address);
@@ -88,7 +88,7 @@ public static class UIManager
         var menu = go.GetComponent<T>();
         if (menu == null)
         {
-            Debug.LogError($"[UIManager] {address} のルートに {typeof(T).Name} が付いていません。");
+            Debug.LogError($"[MenuManager] {address} のルートに {typeof(T).Name} が付いていません。");
             Object.Destroy(go);
             return null;
         }

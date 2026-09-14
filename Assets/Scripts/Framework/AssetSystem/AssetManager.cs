@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -15,7 +16,7 @@ public static class AssetManager
     /// <summary>
     /// 同期で読み込む。読み込み済みならキャッシュを返す。失敗時は null。
     /// </summary>
-    public static T Load<T>(string address) where T : Object
+    public static T Load<T>(string address) where T : UnityEngine.Object
     {
         if (_handle_dict.TryGetValue(address, out var cached_handle))
         {
@@ -31,7 +32,7 @@ public static class AssetManager
     /// <summary>
     /// 非同期で読み込む。終わったら Load で取り出す。
     /// </summary>
-    public static IEnumerator LoadAsync<T>(string address) where T : Object
+    public static IEnumerator LoadAsync<T>(string address) where T : UnityEngine.Object
     {
         if (_handle_dict.ContainsKey(address))
         {
@@ -62,7 +63,18 @@ public static class AssetManager
             return null;
         }
 
-        return Object.Instantiate(prefab, parent);
+        return UnityEngine.Object.Instantiate(prefab, parent);
+    }
+
+    /// <summary>
+    /// Prefab を非同期で読み込んで生成する。完了したら onComplete が呼ばれる（失敗時は null）。
+    /// </summary>
+    public static IEnumerator LoadAndInstantiateAsync(string address, Transform parent = null, Action<GameObject> onComplete = null)
+    {
+        yield return LoadAsync<GameObject>(address);
+
+        var instance = Instantiate(address, parent);
+        onComplete?.Invoke(instance);
     }
 
     /// <summary>

@@ -4,7 +4,7 @@ using UnityEngine;
 /// メニューの基底クラス。Prefab のルートに付ける。
 /// Prefab は自分で Canvas を持ち、Addressables に「UI/クラス名」で登録する。
 /// </summary>
-public abstract class Menu : MonoBehaviour
+public abstract class MenuBase : MonoBehaviour
 {
     /// <summary>表示中なら true。</summary>
     public bool isOpen => gameObject.activeSelf;
@@ -30,14 +30,14 @@ public abstract class Menu : MonoBehaviour
     /// <summary>閉じるたびに呼ばれる。</summary>
     protected virtual void OnClose() { }
 
-    // UIManager から呼ぶ。生成直後の初期化。閉じた状態で待機させる。
+    // MenuManager から呼ぶ。生成直後の初期化。閉じた状態で待機させる。
     internal void Initialize()
     {
         OnInitialize();
         gameObject.SetActive(false);
     }
 
-    // UIManager から呼ぶ。
+    // MenuManager から呼ぶ。
     internal void Open()
     {
         gameObject.SetActive(true);
