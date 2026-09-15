@@ -1,22 +1,16 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.SceneManagement;
 
 /// <summary>
 /// シーン切り替えとローディング表示を行う常駐オブジェクト。最初のシーンに 1 つ置く。
+/// ローディング UI は子オブジェクトとしてあらかじめ置き、Inspector で _loading にセットしておくこと。
 /// </summary>
 public sealed class SceneLoader : Singleton<SceneLoader>
 {
-    public const string LOADING_ADDRESS = "UI/Loading";
-
-    // ローディングの最低表示時間。チラつき防止
-    private const float _MIN_LOADING_SECONDS = 0.5f;
+    [SerializeField] private GameObject _loading;
 
     private bool _is_changing;
-
-    private GameObject _loading;
 
     /// <summary>
     /// シーン切り替え中なら true。
@@ -30,19 +24,19 @@ public sealed class SceneLoader : Singleton<SceneLoader>
     {
         if (instance == null)
         {
-            Debug.LogError("[SceneLoader] 見つかりません。最初のシーンに SceneLoader を置いてください。");
+            Debug.LogError("見つかりません。最初のシーンに SceneLoader を置いてください。");
             return;
         }
 
         if (string.IsNullOrEmpty(scene_name))
         {
-            Debug.LogError("[SceneLoader] シーン名が空です。");
+            Debug.LogError("シーン名が空です。");
             return;
         }
 
         if (instance._is_changing)
         {
-            Debug.LogWarning($"[SceneLoader] 切り替え中のため無視しました: {scene_name}");
+            Debug.LogWarning($"切り替え中のため無視しました: {scene_name}");
             return;
         }
 
@@ -52,17 +46,12 @@ public sealed class SceneLoader : Singleton<SceneLoader>
 
     protected override void OnInit()
     {
-        // UnloadAll で消されないよう、AssetManager を使わず直接読む
-        var handle = Addressables.LoadAssetAsync<GameObject>(LOADING_ADDRESS);
-        handle.WaitForCompletion();
-        if (handle.Status != AsyncOperationStatus.Succeeded)
+        if (_loading == null)
         {
-            Debug.LogError($"[SceneLoader] ローディング Prefab を読めません: {LOADING_ADDRESS}。ローディング無しで動きます。");
-            Addressables.Release(handle);
+            Debug.LogError("_loading が未設定です。");
             return;
         }
 
-        _loading = Instantiate(handle.Result, transform);
         _loading.SetActive(false);
     }
 
@@ -70,9 +59,8 @@ public sealed class SceneLoader : Singleton<SceneLoader>
     {
         _is_changing = true;
 
-        yield return FadeManager.instance.FadeOut();
+        yield return FadeManager.instance.FadeOut(1);
         _SetLoadingVisible(true);
-        var start_time = Time.unscaledTime;
 
         // 暗転中なので、ここで解放しても見た目は崩れない
         AssetManager.UnloadAll();
@@ -86,13 +74,8 @@ public sealed class SceneLoader : Singleton<SceneLoader>
             yield return null;
         }
 
-        while (Time.unscaledTime - start_time < _MIN_LOADING_SECONDS)
-        {
-            yield return null;
-        }
-
         _SetLoadingVisible(false);
-        yield return FadeManager.instance.FadeIn();
+        yield return FadeManager.instance.FadeIn(1);
 
         _is_changing = false;
     }
