@@ -70,7 +70,7 @@ public sealed class SceneLoader : Singleton<SceneLoader>
     {
         _is_changing = true;
 
-        yield return FadeManager.FadeOut();
+        yield return FadeManager.instance.FadeOut();
         _SetLoadingVisible(true);
         var start_time = Time.unscaledTime;
 
@@ -92,7 +92,7 @@ public sealed class SceneLoader : Singleton<SceneLoader>
         }
 
         _SetLoadingVisible(false);
-        yield return FadeManager.FadeIn();
+        yield return FadeManager.instance.FadeIn();
 
         _is_changing = false;
     }

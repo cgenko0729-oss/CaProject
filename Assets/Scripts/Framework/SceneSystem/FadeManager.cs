@@ -1,15 +1,12 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
 
 /// <summary>
 /// 画面のフェードを行う常駐オブジェクト。最初のシーンに 1 つ置く。
+/// 黒幕（CanvasGroup）はあらかじめ自分の子オブジェクトとしてシーンに置いておくこと。
 /// </summary>
 public sealed class FadeManager : Singleton<FadeManager>
 {
-    public const string FADE_ADDRESS = "UI/Fade";
-
     public const float DEFAULT_SECONDS = 0.3f;
 
     // alpha 0 = 透明、1 = 真っ黒
@@ -18,7 +15,7 @@ public sealed class FadeManager : Singleton<FadeManager>
     /// <summary>
     /// 画面を暗くする。
     /// </summary>
-    public static IEnumerator FadeOut(float seconds = DEFAULT_SECONDS)
+    public IEnumerator FadeOut(float seconds = DEFAULT_SECONDS)
     {
         return _Fade(1f, seconds);
     }
@@ -26,28 +23,19 @@ public sealed class FadeManager : Singleton<FadeManager>
     /// <summary>
     /// 画面を明るくする。
     /// </summary>
-    public static IEnumerator FadeIn(float seconds = DEFAULT_SECONDS)
+    public IEnumerator FadeIn(float seconds = DEFAULT_SECONDS)
     {
         return _Fade(0f, seconds);
     }
 
     protected override void OnInit()
     {
-        // UnloadAll で消されないよう、AssetManager を使わず直接読む
-        var handle = Addressables.LoadAssetAsync<GameObject>(FADE_ADDRESS);
-        handle.WaitForCompletion();
-        if (handle.Status != AsyncOperationStatus.Succeeded)
+        // 初期状態（alpha / blocksRaycasts）は上書きしない。シーン側の CanvasGroup の設定をそのまま使う
+        _canvas_group = GetComponentInChildren<CanvasGroup>(includeInactive: true);
+        if (_canvas_group == null)
         {
-            Debug.LogError($"[FadeManager] フェード Prefab を読めません: {FADE_ADDRESS}。フェード無しで動きます。");
-            Addressables.Release(handle);
-            return;
+            Debug.LogError("[FadeManager] 子オブジェクトに CanvasGroup が見つかりません。黒幕をあらかじめ子として置いてください。");
         }
-
-        var fade = Instantiate(handle.Result, transform);
-        _canvas_group = fade.GetComponent<CanvasGroup>();
-
-        _canvas_group.alpha = 0f;
-        _canvas_group.blocksRaycasts = false;
     }
 
     private static IEnumerator _Fade(float target_alpha, float seconds)
